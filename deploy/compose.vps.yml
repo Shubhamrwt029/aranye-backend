@@ -1,3 +1,9 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -13,6 +19,7 @@ services:
       retries: 10
     networks:
       - private
+    logging: *default-logging
 
   redis:
     image: redis:7-alpine
@@ -27,6 +34,7 @@ services:
       retries: 10
     networks:
       - private
+    logging: *default-logging
 
   api:
     image: aranye-backend:${ARANYE_IMAGE_TAG}
@@ -45,6 +53,7 @@ services:
         condition: service_healthy
     networks:
       - private
+    logging: *default-logging
 
   scratch-worker:
     image: aranye-backend:${ARANYE_IMAGE_TAG}
@@ -62,6 +71,7 @@ services:
         condition: service_healthy
     networks:
       - private
+    logging: *default-logging
 
 volumes:
   postgres_data:

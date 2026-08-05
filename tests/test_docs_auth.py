@@ -34,3 +34,22 @@ def test_docs_auth_rejects_missing_or_invalid_credentials(monkeypatch, credentia
 
     assert error.value.status_code == 401
     assert error.value.headers == {"WWW-Authenticate": 'Basic realm="Aranye API documentation"'}
+
+
+def test_public_docs_schema_uses_deployed_paths_and_email_password_auth():
+    schema = main.build_public_docs_openapi()
+
+    assert schema["servers"] == [
+        {
+            "url": main.settings.public_base_url.rstrip("/"),
+            "description": f"{main.settings.environment.title()} API",
+        }
+    ]
+    assert "/admin/auth/login" in schema["paths"]
+    assert not any(path.startswith("/api/v1") for path in schema["paths"])
+
+    security_schemes = schema["components"]["securitySchemes"]
+    assert security_schemes["AdminEmailPassword"]["type"] == "oauth2"
+    password_flow = security_schemes["AdminEmailPassword"]["flows"]["password"]
+    assert password_flow["tokenUrl"].endswith("/docs/token")
+    assert security_schemes["HTTPBearer"]["scheme"] == "bearer"

@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from copy import deepcopy
 from pathlib import Path
 from secrets import compare_digest
 from typing import Annotated
@@ -8,14 +9,17 @@ from uuid import uuid4
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.responses import JSONResponse
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi.security import HTTPBasic, HTTPBasicCredentials, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 import structlog
 
 from app.api.v1.router import api_router
+from app.api.deps import get_auth_service
 from app.core.config import get_settings
+from app.schemas.auth import AdminLoginRequest
+from app.services.auth_service import AuthService
 
 settings = get_settings()
 logger = structlog.get_logger()
@@ -132,6 +136,21 @@ def require_docs_auth(
     return credentials.username
 
 
+def build_public_docs_openapi() -> dict:
+    schema = deepcopy(app.openapi())
+    schema["paths"] = {
+        (path.removeprefix("/api/v1") or "/"): definition
+        for path, definition in schema["paths"].items()
+    }
+    schema["servers"] = [
+        {
+            "url": settings.public_base_url.rstrip("/"),
+            "description": f"{settings.environment.title()} API",
+        }
+    ]
+    return schema
+
+
 if settings.api_docs_enabled:
 
     @app.get("/docs", include_in_schema=False)
@@ -150,7 +169,18 @@ if settings.api_docs_enabled:
 
     @app.get("/openapi.json", include_in_schema=False)
     async def protected_openapi(_: Annotated[str, Depends(require_docs_auth)]):
-        return JSONResponse(app.openapi())
+        return JSONResponse(build_public_docs_openapi())
+
+    @app.post("/docs/token", include_in_schema=False)
+    async def swagger_admin_token(
+        form: Annotated[OAuth2PasswordRequestForm, Depends()],
+        _: Annotated[str, Depends(require_docs_auth)],
+        auth_service: Annotated[AuthService, Depends(get_auth_service)],
+    ):
+        tokens = await auth_service.admin_login(
+            AdminLoginRequest(email=form.username, password=form.password)
+        )
+        return {"access_token": tokens.access_token, "token_type": tokens.token_type}
 
 app.add_middleware(
     CORSMiddleware,

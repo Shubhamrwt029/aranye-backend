@@ -91,8 +91,11 @@ API_DOCS_PASSWORD=GENERATE_A_SEPARATE_STRONG_PASSWORD
 
 Swagger UI, ReDoc, and the raw OpenAPI schema all use HTTP Basic authentication. The API endpoints
 shown inside Swagger continue to use their normal Bearer-token authorization through the
-**Authorize** button. Until a domain and HTTPS are installed, documentation credentials travel over
-plain HTTP; treat the IP-based documentation as staging-only and do not reuse this password.
+**Authorize** button. Swagger also offers an **AdminEmailPassword** flow: enter an active admin email
+in its username field and the admin password to obtain and attach a JWT automatically. This does not
+replace customer/shopkeeper OTP authentication or the manual Bearer-token option. Until a domain and
+HTTPS are installed, documentation credentials travel over plain HTTP; treat the IP-based
+documentation as staging-only and do not reuse this password.
 
 ## 5. Start, migrate, and seed staging
 

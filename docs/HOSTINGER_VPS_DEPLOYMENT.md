@@ -90,7 +90,7 @@ docker compose --env-file .env.staging -p aranye-staging \
 docker compose --env-file .env.staging -p aranye-staging \
   -f deploy/compose.vps.yml run --rm api /app/.venv/bin/alembic upgrade head
 docker compose --env-file .env.staging -p aranye-staging \
-  -f deploy/compose.vps.yml run --rm api /app/.venv/bin/python scripts/seed_demo_data.py
+  -f deploy/compose.vps.yml run --rm api /app/.venv/bin/python -m scripts.seed_demo_data
 docker compose --env-file .env.staging -p aranye-staging \
   -f deploy/compose.vps.yml up -d
 ```

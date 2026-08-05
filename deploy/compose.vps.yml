@@ -51,7 +51,7 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile
-    command: ["/app/.venv/bin/aranye-scratch-worker"]
+    command: ["/app/.venv/bin/python", "-m", "scripts.scratch_card_worker"]
     restart: unless-stopped
     env_file:
       - ../${ARANYE_ENV_FILE}

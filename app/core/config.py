@@ -2,7 +2,7 @@ import os
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     app_debug: bool = True
     public_base_url: str = "http://127.0.0.1:8000"
     demo_data_enabled: bool = False
+    api_docs_enabled: bool = False
+    api_docs_username: str | None = None
+    api_docs_password: SecretStr | None = None
 
     # Database
     database_url: str = Field(
@@ -85,6 +88,16 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     settings = Settings(_env_file=os.getenv("ARANYE_ENV_FILE", ".env"))
+    if settings.api_docs_enabled:
+        docs_password = (
+            settings.api_docs_password.get_secret_value() if settings.api_docs_password else ""
+        )
+        if not settings.api_docs_username:
+            raise ValueError("API_DOCS_USERNAME is required when API_DOCS_ENABLED=true")
+        if len(docs_password) < 16:
+            raise ValueError(
+                "API_DOCS_PASSWORD must contain at least 16 characters when API_DOCS_ENABLED=true"
+            )
     if settings.sms_provider == "twilio":
         has_account_credentials = bool(settings.twilio_account_sid and settings.twilio_auth_token)
         has_api_key_credentials = bool(settings.twilio_api_key and settings.twilio_api_key_secret)

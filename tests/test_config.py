@@ -16,3 +16,15 @@ def test_production_rejects_demo_data(monkeypatch):
             get_settings()
     finally:
         get_settings.cache_clear()
+
+
+def test_docs_require_strong_credentials(monkeypatch):
+    monkeypatch.setenv("API_DOCS_ENABLED", "true")
+    monkeypatch.setenv("API_DOCS_USERNAME", "aranye-docs")
+    monkeypatch.setenv("API_DOCS_PASSWORD", "too-short")
+    get_settings.cache_clear()
+    try:
+        with pytest.raises(ValueError, match="at least 16 characters"):
+            get_settings()
+    finally:
+        get_settings.cache_clear()

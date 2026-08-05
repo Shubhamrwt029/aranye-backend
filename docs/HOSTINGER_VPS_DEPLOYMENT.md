@@ -7,9 +7,11 @@ PostgreSQL database, Redis data, worker, environment file, and Docker volumes.
 
 Before a domain is connected:
 
-- Staging API base: `http://VPS_IP/api/staging`
-- Staging health: `http://VPS_IP/api/staging/health`
-- Staging readiness: `http://VPS_IP/api/staging/ready`
+- Staging API base: `http://200.141.6.228/api/staging`
+- Staging health: `http://200.141.6.228/api/staging/health`
+- Staging readiness: `http://200.141.6.228/api/staging/ready`
+- Password-protected Swagger UI: `http://200.141.6.228/api/staging/docs`
+- Password-protected ReDoc: `http://200.141.6.228/api/staging/redoc`
 - Production API base after the domain and HTTPS are configured:
   `https://api.YOUR_DOMAIN/api/production`
 
@@ -78,6 +80,20 @@ chmod 600 .env.staging
 Replace `VPS_IP` and every `CHANGE_ME` value. Use hexadecimal output for the database password so
 the password is safe inside the database URL.
 
+The documentation variables must remain separate from customer, shopkeeper, and administrator API
+accounts:
+
+```env
+API_DOCS_ENABLED=true
+API_DOCS_USERNAME=aranye-docs
+API_DOCS_PASSWORD=GENERATE_A_SEPARATE_STRONG_PASSWORD
+```
+
+Swagger UI, ReDoc, and the raw OpenAPI schema all use HTTP Basic authentication. The API endpoints
+shown inside Swagger continue to use their normal Bearer-token authorization through the
+**Authorize** button. Until a domain and HTTPS are installed, documentation credentials travel over
+plain HTTP; treat the IP-based documentation as staging-only and do not reuse this password.
+
 ## 5. Start, migrate, and seed staging
 
 Every command must use the same Compose project name. This keeps its volumes isolated from
@@ -110,6 +126,8 @@ Verify staging:
 ```bash
 curl http://VPS_IP/api/staging/health
 curl http://VPS_IP/api/staging/ready
+curl -I http://VPS_IP/api/staging/docs
+curl -u 'DOCS_USERNAME:DOCS_PASSWORD' http://VPS_IP/api/staging/openapi.json
 ```
 
 ## 7. Production prerequisites
@@ -143,7 +161,7 @@ docker compose --env-file .env.production -p aranye-production \
 Development/staging build:
 
 ```env
-API_BASE_URL=http://VPS_IP/api/staging
+API_BASE_URL=http://200.141.6.228/api/staging
 API_TIMEOUT_MS=15000
 ALLOW_INSECURE_LOCAL_API=false
 ```

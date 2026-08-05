@@ -1,10 +1,14 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
+from secrets import compare_digest
+from typing import Annotated
 
 from uuid import uuid4
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.responses import JSONResponse
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
@@ -16,6 +20,7 @@ from app.core.config import get_settings
 settings = get_settings()
 logger = structlog.get_logger()
 EXPECTED_SCHEMA_REVISION = "010"
+docs_security = HTTPBasic(auto_error=False)
 
 OPENAPI_TAGS = [
     {
@@ -98,9 +103,54 @@ app = FastAPI(
     description="Aranye — Customer & Shopkeeper marketplace API",
     openapi_tags=OPENAPI_TAGS,
     lifespan=lifespan,
-    docs_url="/docs" if settings.app_debug else None,
-    redoc_url="/redoc" if settings.app_debug else None,
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
 )
+
+
+def require_docs_auth(
+    credentials: Annotated[HTTPBasicCredentials | None, Depends(docs_security)],
+) -> str:
+    configured_password = (
+        settings.api_docs_password.get_secret_value() if settings.api_docs_password else ""
+    )
+    valid_username = bool(credentials) and compare_digest(
+        credentials.username.encode("utf-8"),
+        (settings.api_docs_username or "").encode("utf-8"),
+    )
+    valid_password = bool(credentials) and compare_digest(
+        credentials.password.encode("utf-8"),
+        configured_password.encode("utf-8"),
+    )
+    if not (valid_username and valid_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Documentation authentication required",
+            headers={"WWW-Authenticate": 'Basic realm="Aranye API documentation"'},
+        )
+    return credentials.username
+
+
+if settings.api_docs_enabled:
+
+    @app.get("/docs", include_in_schema=False)
+    async def swagger_docs(_: Annotated[str, Depends(require_docs_auth)]):
+        return get_swagger_ui_html(
+            openapi_url="./openapi.json",
+            title=f"{settings.app_name} - Swagger UI",
+        )
+
+    @app.get("/redoc", include_in_schema=False)
+    async def redoc_docs(_: Annotated[str, Depends(require_docs_auth)]):
+        return get_redoc_html(
+            openapi_url="./openapi.json",
+            title=f"{settings.app_name} - ReDoc",
+        )
+
+    @app.get("/openapi.json", include_in_schema=False)
+    async def protected_openapi(_: Annotated[str, Depends(require_docs_auth)]):
+        return JSONResponse(app.openapi())
 
 app.add_middleware(
     CORSMiddleware,

@@ -29,6 +29,7 @@ services:
       - private
 
   api:
+    image: aranye-backend:${ARANYE_IMAGE_TAG}
     build:
       context: ..
       dockerfile: Dockerfile
@@ -46,6 +47,7 @@ services:
       - private
 
   scratch-worker:
+    image: aranye-backend:${ARANYE_IMAGE_TAG}
     build:
       context: ..
       dockerfile: Dockerfile

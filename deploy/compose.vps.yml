@@ -51,7 +51,7 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile
-    command: ["uv", "run", "aranye-scratch-worker"]
+    command: ["/app/.venv/bin/aranye-scratch-worker"]
     restart: unless-stopped
     env_file:
       - ../${ARANYE_ENV_FILE}

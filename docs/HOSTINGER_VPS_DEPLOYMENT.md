@@ -88,9 +88,9 @@ cd /opt/aranye/backend
 docker compose --env-file .env.staging -p aranye-staging \
   -f deploy/compose.vps.yml up -d postgres redis
 docker compose --env-file .env.staging -p aranye-staging \
-  -f deploy/compose.vps.yml run --rm api uv run alembic upgrade head
+  -f deploy/compose.vps.yml run --rm api /app/.venv/bin/alembic upgrade head
 docker compose --env-file .env.staging -p aranye-staging \
-  -f deploy/compose.vps.yml run --rm api uv run python scripts/seed_demo_data.py
+  -f deploy/compose.vps.yml run --rm api /app/.venv/bin/python scripts/seed_demo_data.py
 docker compose --env-file .env.staging -p aranye-staging \
   -f deploy/compose.vps.yml up -d
 ```
@@ -133,7 +133,7 @@ chmod 600 .env.production
 docker compose --env-file .env.production -p aranye-production \
   -f deploy/compose.vps.yml up -d postgres redis
 docker compose --env-file .env.production -p aranye-production \
-  -f deploy/compose.vps.yml run --rm api uv run alembic upgrade head
+  -f deploy/compose.vps.yml run --rm api /app/.venv/bin/alembic upgrade head
 docker compose --env-file .env.production -p aranye-production \
   -f deploy/compose.vps.yml up -d
 ```
@@ -179,7 +179,7 @@ git pull --ff-only
 docker compose --env-file .env.staging -p aranye-staging \
   -f deploy/compose.vps.yml build api scratch-worker
 docker compose --env-file .env.staging -p aranye-staging \
-  -f deploy/compose.vps.yml run --rm api uv run alembic upgrade head
+  -f deploy/compose.vps.yml run --rm api /app/.venv/bin/alembic upgrade head
 docker compose --env-file .env.staging -p aranye-staging \
   -f deploy/compose.vps.yml up -d
 curl http://VPS_IP/api/staging/ready
